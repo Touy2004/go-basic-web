@@ -107,7 +107,7 @@ func courseHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 		if updateCourse.CourseId != id {
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 		course = &updateCourse
 		CourseList[listItemIndex] = *course
@@ -158,8 +158,20 @@ func coursesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func enableCorsMidlewareHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func main() {
-	http.HandleFunc("/course/", courseHandler)
-	http.HandleFunc("/courses", coursesHandler)
+	couresItemHandler := http.HandlerFunc(courseHandler)
+	CourseListHandler := http.HandlerFunc(coursesHandler)
+	http.Handle("/course/", enableCorsMidlewareHandler(couresItemHandler))
+	http.Handle("/courses", enableCorsMidlewareHandler(CourseListHandler))
 	http.ListenAndServe(":8080", nil)
 }
